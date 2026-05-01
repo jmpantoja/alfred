@@ -1,0 +1,17 @@
+#!/usr/bin/env zsh
+
+local -a options
+options=(all system apps)
+
+if [[ "$1" == "--list" ]]; then
+    # Usamos @ para que devuelva los elementos separados por espacios
+    echo "${options[@]}"
+    return 0
+fi
+
+case $1 in
+    all) sudo snap refresh && sudo apt update && sudo apt upgrade -y ;;
+    system) sudo apt update && sudo apt upgrade -y ;;
+    apps) sudo snap refresh ;;
+    *) echo "Uso: alfred update {all|system|apps}" ;;
+esac

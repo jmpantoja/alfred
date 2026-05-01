@@ -1,0 +1,34 @@
+#compdef alfred
+
+_alfred() {
+    local context state state_descr line
+    local base_path="$ALFRED_ROOT"
+
+    _arguments -C \
+        '1: :->command' \
+        '*: :->args'
+
+    case $state in
+        command)
+            local -a subcommands
+            subcommands=($(ls "$base_path/commands"))
+            _describe -t commands 'Comandos de Alfred' subcommands
+            ;;
+        args)
+            local cmd="$words[2]"
+            local target="$ALFRED_ROOT/commands/$cmd"
+
+            if [[ -x "$target" ]]; then
+                local sub_opts
+                sub_opts=$($target --list 2>/dev/null)
+
+                local -a opts_array
+                opts_array=(${(z)sub_opts})
+
+                if (( ${#opts_array} > 0 )); then
+                    _describe -t values "Opciones para $cmd" opts_array
+                fi
+            fi
+            ;;
+    esac
+}
