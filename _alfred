@@ -16,7 +16,7 @@ _alfred() {
             ;;
         args)
             local cmd="$words[2]"
-            local target="$ALFRED_ROOT/commands/$cmd"
+            local target="$ALFRED_ROOT/commands/$cmd/main.zsh"
 
             if [[ -x "$target" ]]; then
                 local sub_opts

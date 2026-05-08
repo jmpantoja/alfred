@@ -1,17 +1,14 @@
 #!/usr/bin/env zsh
+source "$ALFRED_UTILS"
 
-# 1. Definimos las opciones como un array simple
-local -a sub_params
-sub_params=(all)
+local desc="Actualiza el sistema."
+local -a sub_params=(world sir)
 
-local REAL_USER="pato"
-local USER_ID=$(id -u $REAL_USER)
+local cmd="${0:A:h:t}"
+local help=$(alfred_help_message "$cmd" "$desc" "${sub_params[@]}")
 
-# Buscamos '--list' en todos los argumentos recibidos ($*)
-if [[ " $* " == *" --list "* ]]; then
-    echo "${(j: :)sub_params}"
-    return 0
-fi
+alfred_help "$help" "$@" && return 0
+alfred_list "${sub_params[@]}" "$@" && return 0
 
 # 3. Lógica del comando
 case "$1" in
@@ -64,7 +61,7 @@ case "$1" in
 
         ;;
     *)
-        echo "Uso: alfred update {${(j:|:)sub_params}}"
+        echo $help
         return 1
         ;;
 esac

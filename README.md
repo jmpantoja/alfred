@@ -10,7 +10,7 @@ Alfred es un ecosistema modular de scripts para Zsh diseñado para centralizar t
 2. **Permisos de ejecución:** Asegúrate de que los archivos principales sean ejecutables:
 ```bash
 chmod +x /data/workspace/alfred/alfred.zsh
-chmod +x /data/workspace/alfred/commands/*
+chmod +x /data/workspace/alfred/commands/*/main.zsh
 ```
 
 ### Integración en .zshrc
@@ -29,33 +29,52 @@ Alfred es modular. Cada comando es un script independiente que reside en una car
 
 ### Ubicación
 
-Todos los comandos deben colocarse en la carpeta: $ALFRED_ROOT/commands/.
+Todos los comandos deben colocarse en la carpeta: $ALFRED_ROOT/commands/<name>/main.zsh.
 
-### Convenciones y Autocompletado
-
+### Convenciones y 
+**Autocompletado**
 Para que el autocompletado de Zsh reconozca las opciones de tu comando, el script debe implementar el flag --list. Este flag debe imprimir las opciones disponibles separadas por espacios.
 
-### La función alfred_notify
+**Ayuda**
+Para que el parametro -h funcione, el script debe implementar el flag -h. Este flag debe imprimir el mensaje de ayuda / descripción del comando.
 
-Tienes disponible la función alfred_notify "mensaje" "icono" para enviar notificaciones visuales al escritorio. Esta función es robusta y funciona incluso cuando el script es ejecutado por el usuario root a través de Anacron, detectando automáticamente la sesión del usuario físico.
+### Variables
+En cada subcomando, se definen las siguientes variables locales para automatizar su comportamiento:
+**desc**: Una cadena de texto que describe brevemente la función del comando.
+**sub_params**: Un array (local -a) que contiene los subcomandos o flags válidos. Se utiliza tanto para la ayuda visual como para el sistema de autocompletado.  
+**cmd**: Se calcula dinámicamente usando ${0:A:h:t}. Esto extrae el nombre de la carpeta que contiene el script, asegurando que si renombras el directorio, el comando se actualice automáticamente.
+**help**: Almacena el mensaje de ayuda preformateado generado por la función de utilidad, facilitando su reutilización en errores o solicitudes de ayuda.  
 
+
+### Utilidades
+El archivo utils.zsh provee la lógica compartida para todos los comandos de Alfred:
+**alfred_help_message**
+Se encarga de unificar la estética de la ayuda. Recibe el nombre del comando, la descripción y los parámetros para devolver un bloque de texto formateado (ej. con prefijos como > y estructuras de uso.  
+
+**alfred_help**
+Gestiona la intercepción del flag -h. Verifica si el argumento de ayuda está presente en la ejecución actual ($@); si es así, imprime el mensaje de ayuda y detiene la ejecución del script devolviendo un estado exitoso (return 0).
+
+**alfred_list**
+Es el motor del autocompletado dinámico. Cuando el sistema de autocompletado de Zsh (_alfred) solicita los parámetros mediante el flag --list, esta función filtra los argumentos y devuelve únicamente la lista de sub_params en formato de texto plano.
+
+**alfred_notify**
+Proporciona un sistema de notificaciones de escritorio persistente. Está diseñada para detectar si el script se ejecuta con sudo y, mediante la identificación del usuario real (SUDO_UID), redirigir la notificación al bus de sesión del usuario para que aparezca correctamente en el entorno gráfico.
 
 ### Ejemplo: Comando "Hello World" (hello)
 
-Crea el archivo $ALFRED_ROOT/commands/hello y dale permisos de ejecución:
+Crea el archivo $ALFRED_ROOT/commands/hello/main.zsh y dale permisos de ejecución:
 
 ```bash
 #!/usr/bin/env zsh
 
-# 1. Definición de sub-parámetros
-local -a sub_params
-sub_params=(world sir)
+local cmd="${0:A:h:t}"
+local desc="Dice Hola."
+local -a sub_params=(world sir)
+local help=$(alfred_help_message "$cmd" "$desc" "${sub_params[@]}")
 
-# 2. Soporte para autocompletado (Alfred llama a esto internamente)
-if [[ " $* " == *" --list "* ]]; then
-    echo "${(j: :)sub_params}"
-    return 0
-fi
+alfred_help "$help" "$@" && return 0
+alfred_list "${sub_params[@]}" "$@" && return 0
+
 
 # 3. Lógica del comando
 case "$1" in
